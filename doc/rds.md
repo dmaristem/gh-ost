@@ -12,7 +12,7 @@
 
 #### Replication
 
-In Aurora replication, you have separate reader and writer endpoints however because the cluster shares the underlying storage layer, `gh-ost` will detect it is running on the master. This becomes an issue when you wish to use [migrate/test on replica][migrate_test_on_replica_docs] because you won't be able to use a single cluster in the same way you would with MySQL RDS.
+In Aurora replication, you have separate reader and writer endpoints however because the cluster shares the underlying storage layer, `gh-ost` will detect it is running on the master. This becomes an issue when you wish to use [migrate/test on replica][migrate_test_on_replica_docs] and [connect to replica, migrate to master][connect_to_replica_migrate_on_master] because you won't be able to use a single cluster in the same way you would with MySQL RDS.
 
 To work around this, you can follow along the [AWS replication between clusters documentation][aws_replication_docs] for Aurora with one small caveat. For the "Create a Snapshot of Your Replication Master" step, the binlog position is not available in the AWS console. You will need to issue the SQL query `SHOW SLAVE STATUS` or `aws rds describe-events` API call to get the correct position.
 
@@ -33,21 +33,21 @@ You need to turn this feature off during the migration process.
 Set the `aurora_enable_repl_bin_log_filtering` parameter to 0 in the Parameter Group for your cluster.  
 When the migration is done, set it back to 1 (default).
 
-
 #### Preflight checklist
 
 Before trying to run any `gh-ost` migrations you will want to confirm the following:
 
-- [ ] You have a secondary cluster available that will act as a replica. Rule of thumb here has been a 1 instance per cluster to mimic MySQL-style replication as opposed to Aurora style.
-- [ ] The database instance parameters and database cluster parameters are consistent between your master and replicas
-- [ ] Executing `SHOW SLAVE STATUS\G` on your replica cluster displays the correct master host, binlog position, etc.
-- [ ] Database backup retention is greater than 1 day to enable binlogs
-- [ ] You have setup [`hooks`][ghost_hooks] to issue RDS procedures for stopping and starting replication. (see [github/gh-ost#163][ghost_rds_issue_tracking] for examples)
-- [ ] The parameter `aurora_enable_repl_bin_log_filtering` is set to 0
+- [ ] For non-Master operation modes, you have to have a secondary cluster available that will act as a replica. Rule of thumb here has been a 1 instance per cluster to mimic MySQL-style replication as opposed to Aurora style.
+- [ ] The database instance parameters and database cluster parameters are consistent between your master and replicas.
+- [ ] Executing `SHOW MASTER STATUS` on your primary cluster, and `SHOW SLAVE STATUS\G` (or `SHOW REPLICA STATUS`) on your replica cluster displays the correct, matching master host, binlog position, etc.
+- [ ] Database backup retention is greater than 1 day to enable binlogs.
+- [ ] For 'Migrate/test on replica' operation mode, uou have setup [`hooks`][ghost_hooks] to issue RDS procedures for stopping and starting replication. (see [github/gh-ost#163][ghost_rds_issue_tracking] for examples)
+- [ ] The parameter `aurora_enable_repl_bin_log_filtering` is set to 0.
 
 [new_issue]: https://github.com/github/gh-ost/issues/new
 [assume_rbr_docs]: https://github.com/github/gh-ost/blob/master/doc/command-line-flags.md#assume-rbr
 [migrate_test_on_replica_docs]: https://github.com/github/gh-ost/blob/master/doc/cheatsheet.md#c-migratetest-on-replica
+[connect_to_replica_migrate_on_master]: https://github.com/github/gh-ost/blob/master/doc/cheatsheet.md#c-migratetest-on-replica:~:text=Connect%20to%20replica%2C%20migrate%20on%20master
 [aws_replication_docs]: http://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Aurora.Overview.Replication.MySQLReplication.html
 [percona_toolkit_patch]: https://github.com/jacobbednarz/percona-toolkit/commit/0271ba6a094da446a5e5bb8d99b5c26f1777f2b9
 [ghost_hooks]: https://github.com/github/gh-ost/blob/master/doc/hooks.md
