@@ -28,10 +28,12 @@ This tool requires binlog_format=STATEMENT, but the current binlog_format is set
 
 #### Binlog filtering
 
-In Aurora, the [binlog filtering feature][aws_replication_docs_bin_log_filtering] is enabled by default. This becomes an issue when gh-ost tries to do the cut-over, because gh-ost waits for an entry in the binlog to proceed but this entry will never end up in the binlog because it gets filtered out by the binlog filtering feature.  
+In Aurora MySQL 2, the [binlog filtering feature][aws_replication_docs_bin_log_filtering] is enabled by default. This becomes an issue when gh-ost tries to do the cut-over, because gh-ost waits for an entry in the binlog to proceed but this entry will never end up in the binlog because it gets filtered out by the binlog filtering feature.  
 You need to turn this feature off during the migration process.  
 Set the `aurora_enable_repl_bin_log_filtering` parameter to 0 in the Parameter Group for your cluster.  
 When the migration is done, set it back to 1 (default).
+
+In Aurora MySQL 3, the ability to change the value of the `aurora_enable_repl_bin_log_filtering` parameter has been removed. 
 
 #### Preflight checklist
 
@@ -39,10 +41,9 @@ Before trying to run any `gh-ost` migrations you will want to confirm the follow
 
 - [ ] For non-Master operation modes, you have to have a secondary cluster available that will act as a replica. Rule of thumb here has been a 1 instance per cluster to mimic MySQL-style replication as opposed to Aurora style.
 - [ ] The database instance parameters and database cluster parameters are consistent between your master and replicas.
-- [ ] Executing `SHOW MASTER STATUS` on your primary cluster, and `SHOW SLAVE STATUS\G` (or `SHOW REPLICA STATUS`) on your replica cluster displays the correct, matching master host, binlog position, etc.
 - [ ] Database backup retention is greater than 1 day to enable binlogs.
-- [ ] For 'Migrate/test on replica' operation mode, uou have setup [`hooks`][ghost_hooks] to issue RDS procedures for stopping and starting replication. (see [github/gh-ost#163][ghost_rds_issue_tracking] for examples)
-- [ ] The parameter `aurora_enable_repl_bin_log_filtering` is set to 0.
+- [ ] For 'Migrate/test on replica' operation mode, you have setup [`hooks`][ghost_hooks] to issue RDS procedures for stopping and starting replication. (see [github/gh-ost#163][ghost_rds_issue_tracking] for examples)
+- [ ] The parameter `aurora_enable_repl_bin_log_filtering` is set to 0 if you are using Aurora MySQL 2.
 
 [new_issue]: https://github.com/github/gh-ost/issues/new
 [assume_rbr_docs]: https://github.com/github/gh-ost/blob/master/doc/command-line-flags.md#assume-rbr
